@@ -46,11 +46,12 @@ class TestUtils(BaseTestCase):
     def make_process_mock(self, return_code=0):
         process_mock = mock.Mock()
         process_mock.stdout = ['Stdout line 1', 'Stdout line 2']
+        process_mock.stderr = ['.']
         process_mock.returncode = return_code
 
         return process_mock
 
-    def test_exec_cmd_executes_sucessfuly(self):
+    def test_exec_cmd_executes_successfully(self):
         cmd = 'some command'
 
         process_mock = self.make_process_mock()
@@ -61,7 +62,7 @@ class TestUtils(BaseTestCase):
         popen_mock.assert_called_once_with(
             cmd,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.PIPE,
             shell=True)
 
     @mock.patch('fuel_upgrade.utils.exec_cmd',

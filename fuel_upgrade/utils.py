@@ -25,6 +25,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 import urllib2
 import uuid
@@ -54,12 +55,15 @@ def exec_cmd(cmd):
     logger.debug('Execute command "%s"', cmd)
     child = subprocess.Popen(
         cmd, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.PIPE,
         shell=True)
 
     logger.debug('Stdout and stderr of command "%s":', cmd)
     for line in child.stdout:
         logger.debug(line.rstrip())
+    for line in child.stderr:
+        logger.debug(line.rstrip())
+        sys.stderr.write(line)
 
     _wait_and_check_exit_code(cmd, child)
 
