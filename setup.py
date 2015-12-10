@@ -14,47 +14,9 @@
 
 import os
 
-from setuptools import find_packages
 from setuptools import setup
 
 
-def parse_requirements_txt():
-    """Parses requirements.txt
-
-    Returns arrays with `install_requires`
-    packages and with `dependency_links` sources.
-    """
-    root = os.path.dirname(os.path.abspath(__file__))
-
-    requirements = []
-
-    with open(os.path.join(root, 'requirements.txt'), 'r') as f:
-        for line in f.readlines():
-            line = line.rstrip()
-            if not line or line.startswith('#'):
-                continue
-            requirements.append(line)
-
-    return requirements
-REQUIREMENTS = parse_requirements_txt()
-
-
 setup(
-    name='fuel_upgrade',
-    version='0.1.0',
-    description='Upgrade system for Fuel-master node',
-    long_description="""Upgrade system for Fuel-master node""",
-    classifiers=[
-        "Programming Language :: Python",
-        "Topic :: System :: Software Distribution"],
-    author='Mirantis Inc.',
-    author_email='product@mirantis.com',
-    url='http://mirantis.com',
-    keywords='fuel upgrade mirantis',
-    packages=find_packages(),
-    zip_safe=False,
-    install_requires=REQUIREMENTS,
-    include_package_data=True,
-    entry_points={
-        'console_scripts': [
-            'fuel-upgrade = fuel_upgrade.cli:main']})
+    setup_requires=['pbr'],
+    pbr=True)
