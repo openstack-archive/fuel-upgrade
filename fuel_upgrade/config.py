@@ -89,7 +89,10 @@ def build_config(update_path, admin_password):
     :param str admin_password: admin user password
     :returns: :class:`Config` object
     """
-    return Config(config(update_path, admin_password))
+    if update_path:
+        return Config(config_tarball(update_path, admin_password))
+    else:
+        return Config(config_data_driven(admin_password))
 
 
 def from_fuel_version(current_version_path, from_version_path):
@@ -228,64 +231,22 @@ def get_host_system(update_path, new_version):
     }
 
 
-def config(update_path, admin_password):
-    """Generates configuration data for upgrade
-
-    :param str update_path: path to upgrade
-    :param str admin_password: admin user password
-    :retuns: huuuge dict with all required
-             for ugprade parameters
-    """
-    fuel_config_path = '/etc/fuel/'
-
+def common_config():
+    fuel_config_path = '/etc/fuel'
     can_upgrade_from = ['7.0']
-
-    current_fuel_version_path = '/etc/fuel/version.yaml'
-    new_upgrade_version_path = join(update_path, 'config/version.yaml')
-
+    current_fuel_version_path = join(fuel_config_path, 'version.yaml')
     current_version = get_version_from_config(current_fuel_version_path)
-    new_version = get_version_from_config(new_upgrade_version_path)
-    new_version_path = join('/etc/fuel', new_version, 'version.yaml')
-
     version_files_mask = '/var/lib/fuel_upgrade/*/version.yaml'
-    working_directory = join('/var/lib/fuel_upgrade', new_version)
-
-    from_version_path = join(working_directory, 'version.yaml')
-    from_version = from_fuel_version(
-        current_fuel_version_path, from_version_path)
-    previous_version_path = join('/etc/fuel', from_version, 'version.yaml')
-
-    container_data_path = join('/var/lib/fuel/container_data', new_version)
-
-    astute_keys_path = join(working_directory, 'astute')
-
     cobbler_container_config_path = '/var/lib/cobbler/config'
-    cobbler_config_path = join(working_directory, 'cobbler_configs')
-    cobbler_config_files_for_verifier = join(
-        cobbler_config_path, 'config/systems.d/*.json')
-
     # Keep only 3 latest database files
     keep_db_backups_count = 3
     db_backup_timeout = 120
     db_backup_interval = 4
-
     current_fuel_astute_path = '/etc/fuel/astute.yaml'
     astute = read_yaml_config(current_fuel_astute_path)
-
-    # unix pattern that is used to match deployment tasks stored in library
-    deployment_tasks_file_pattern = '*tasks.yaml'
-
-    supervisor = {
-        'configs_prefix': '/etc/supervisord.d/',
-        'current_configs_prefix': '/etc/supervisord.d/current',
-        'endpoint': '/var/run/supervisor.sock',
-        'restart_timeout': 600}
-
     checker = {
         'timeout': 900,
         'interval': 3}
-
-    endpoints = get_endpoints(astute, admin_password)
 
     # Configuration data for docker client
     docker = {
@@ -295,6 +256,134 @@ def config(update_path, admin_password):
         'stop_container_timeout': 20,
         'dir': '/var/lib/docker'}
 
+    supervisor = {
+        'configs_prefix': '/etc/supervisord.d/',
+        'current_configs_prefix': '/etc/supervisord.d/current',
+        'endpoint': '/var/run/supervisor.sock',
+        'restart_timeout': 600}
+
+    return locals()
+
+
+def config_data_driven(admin_password):
+    """Generates configuration data for data-driven upgrade"""
+
+    base_config_dict = common_config()
+    base_config = Config(base_config_dict)
+    working_directory = '/var/tmp/fuel_backup/'
+    update_path = join(working_directory, 'update_path')
+    containers = []
+    from_version_path = base_config.current_fuel_version_path
+    from_version = base_config.current_version
+    new_version = from_version
+
+    fuel_state_path = '/var/lib/fuel'
+    container_data_path = join(fuel_state_path, 'container_data')
+    cobbler_config_path = join(container_data_path, from_version,
+                               'cobbler/config')
+    cobbler_systems_path = join(cobbler_config_path,
+                                'systems.d')
+    fuel_keys_path = join(fuel_state_path, 'keys')
+    fuel_ssh_private_key_path = '/root/.ssh/id_rsa'
+    fuel_ssh_public_key_path = '{0}.pub'.format(fuel_ssh_private_key_path)
+
+    admin_ipaddress = base_config.astute['ADMIN_NETWORK']['ipaddress']
+    master_ip = admin_ipaddress
+    db_access = base_config.astute['postgres']
+    endpoints = get_endpoints(base_config.astute, admin_password)
+
+    # Empty version.yaml locations (for VersionFile manager)
+    new_version_path = join(base_config.fuel_config_path,
+                            from_version, 'version.yaml')
+    new_upgrade_version_path = new_version_path
+    previous_version_path = join(working_directory, 'version.yaml')
+
+    backup_config = {
+        "target": working_directory,
+        "dump": {
+            "master": {
+                "objects": [{
+                    "path": from_version_path,
+                    "type": "file"
+                }, {
+                    "path": base_config.current_fuel_astute_path,
+                    "type": "file"
+                }, {
+                    "path": cobbler_systems_path,
+                    "type": "dir",
+                    "exclude": ["default.json"]
+                }, {
+                    "path": fuel_keys_path,
+                    "type": "dir"
+                }, {
+                    "path": fuel_ssh_private_key_path,
+                    "type": "file"
+                }, {
+                    "path": fuel_ssh_public_key_path,
+                    "type": "file"
+                }, {
+                    "type": "postgres",
+                    "dbhost": admin_ipaddress,
+                    "dbname": db_access["nailgun_dbname"],
+                    "username": db_access["nailgun_user"],
+                    "password": db_access["nailgun_password"]
+                }, {
+                    "type": "postgres",
+                    "dbhost": admin_ipaddress,
+                    "dbname": db_access["keystone_dbname"],
+                    "username": db_access["keystone_user"],
+                    "password": db_access["keystone_password"]
+                }],
+                "hosts": [{
+                    "ssh-key": fuel_ssh_private_key_path,
+                    "address": admin_ipaddress
+                }]
+            }
+        },
+        "timestamp": True,
+        "lastdump": "/var/www/nailgun/dump/last",
+        "compression_level": 3,
+        "timeout": 7200
+    }
+
+    return dict(base_config_dict.items() + locals().items())
+
+
+def config_tarball(update_path, admin_password):
+    """Generates configuration data for upgrade from tarball
+
+    :param str update_path: path to upgrade
+    :param str admin_password: admin user password
+    :retuns: huuuge dict with all required
+             for ugprade parameters
+    """
+    base_config_dict = common_config()
+    base_config = Config(base_config_dict)
+    new_upgrade_version_path = join(update_path, 'config/version.yaml')
+
+    new_version = get_version_from_config(new_upgrade_version_path)
+    new_version_path = join('/etc/fuel', new_version, 'version.yaml')
+
+    working_directory = join('/var/lib/fuel_upgrade', new_version)
+
+    from_version_path = join(working_directory, 'version.yaml')
+    from_version = from_fuel_version(
+        base_config.current_fuel_version_path, from_version_path)
+    previous_version_path = join('/etc/fuel', from_version, 'version.yaml')
+
+    astute_keys_path = join(working_directory, 'astute')
+
+    # unix pattern that is used to match deployment tasks stored in library
+    deployment_tasks_file_pattern = '*tasks.yaml'
+
+    endpoints = get_endpoints(base_config.astute, admin_password)
+
+    container_data_path = join('/var/lib/fuel/container_data',
+                               new_version)
+    cobbler_config_path = join(working_directory, 'cobbler_configs')
+    cobbler_config_files_for_verifier = join(
+        cobbler_config_path, 'config/systems.d/*.json')
+
     # Docker image description section
     image_prefix = 'fuel/'
 
@@ -303,7 +392,7 @@ def config(update_path, admin_password):
 
     # Docker containers description section
     container_prefix = 'fuel-core-'
-    master_ip = astute['ADMIN_NETWORK']['ipaddress']
+    master_ip = base_config.astute['ADMIN_NETWORK']['ipaddress']
 
     volumes = {
         'volume_logs': [
@@ -618,4 +707,4 @@ def config(update_path, admin_password):
         }
     ]
 
-    return locals()
+    return dict(base_config_dict.items() + locals().items())
