@@ -17,6 +17,7 @@
 import mock
 
 from fuel_upgrade import config
+from fuel_upgrade.engines.backup import BackupManager
 from fuel_upgrade.tests.base import BaseTestCase
 
 
@@ -24,6 +25,14 @@ class TestBackupManager(BaseTestCase):
 
     def setUp(self):
         self.test_config = mock.Mock()
+
+        self.supervisor_patcher = mock.patch(
+            'fuel_upgrade.engines.backup.SupervisorClient')
+        self.supervisor_class = self.supervisor_patcher.start()
+        self.mock_supervisor = self.supervisor_class.return_value
+
+    def addCleanup(self):
+        self.supervisor_patcher.stop()
 
     def _build_config(self):
         self.test_config = config.build_config(None, None)
@@ -52,3 +61,20 @@ class TestBackupManager(BaseTestCase):
             '/etc/fuel/version.yaml')
         mock_read_yaml_config.assert_called_once_with(
             '/etc/fuel/astute.yaml')
+
+    @mock.patch("shotgun.config.Config")
+    @mock.patch("shotgun.manager.Manager")
+    def test_upgrade(self, mock_shotgun_manager_class,
+                     mock_shotgun_config_class):
+        mock_shotgun_config = mock_shotgun_config_class.return_value
+        mock_shotgun_manager = mock_shotgun_manager_class.return_value
+
+        upgrader = BackupManager(self.test_config)
+        upgrader.upgrade()
+
+        self.mock_supervisor.start.assume_called_once_with('nailgun')
+        mock_shotgun_config_class.assume_called_once_with(
+            self.test_config.backup_config)
+        mock_shotgun_manager_class.assume_called_once_with(
+            mock_shotgun_config)
+        mock_shotgun_manager.snapshot.assume_called_once()
