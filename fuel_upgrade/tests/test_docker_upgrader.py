@@ -325,7 +325,7 @@ class TestDockerUpgrader(BaseTestCase):
             self.upgrader.required_free_space,
             {'/var/lib/fuel_upgrade/9999': 150,
              '/var/lib/docker': 5,
-             '/etc/fuel/': 10,
+             '/etc/fuel': 10,
              '/etc/supervisord.d/': 10})
 
     @mock.patch('fuel_upgrade.engines.docker_engine.utils')
