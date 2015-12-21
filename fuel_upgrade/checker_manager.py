@@ -18,6 +18,7 @@ import logging
 
 import six
 
+from fuel_upgrade.engines.backup import BackupManager
 from fuel_upgrade.engines.docker_engine import DockerInitializer
 from fuel_upgrade.engines.docker_engine import DockerUpgrader
 from fuel_upgrade.engines.host_system import HostSystemUpgrader
@@ -49,6 +50,10 @@ class CheckerManager(object):
 
     #: Mapping of checkers to upgrade engines
     CHECKERS_MAPPING = {
+        BackupManager: [
+            CheckRequiredVersion,
+            CheckNoRunningTasks,
+            CheckNoRunningOstf],
         DockerUpgrader: [
             CheckUpgradeVersions,
             CheckRequiredVersion,
