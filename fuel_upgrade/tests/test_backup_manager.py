@@ -32,6 +32,9 @@ class TestBackupManager(BaseTestCase):
         self.mock_supervisor = mock.MagicMock()
         self.supervisor_class.return_value = self.mock_supervisor
 
+    def tearDown(self):
+        self.supervisor_patcher.stop()
+
     def _build_config(self):
         self.test_config = config.build_config(None, None)
 
