@@ -128,6 +128,10 @@ class UpgradeManager(object):
         of saved version to determine version which
         we run upgrade from.
         """
+        if 'fuel_backup' in self._config.working_directory:
+            logger.info('Not updating repos for backup action, skipping')
+            return
+
         for version_file in glob.glob(self._config.version_files_mask):
             utils.remove(version_file)
 
