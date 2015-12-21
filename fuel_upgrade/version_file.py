@@ -65,6 +65,10 @@ class VersionFile(object):
         """
         logger.info('Switch version file to new version')
 
+        if self.src_new_version_file == self.dst_new_version_file:
+            logger.info('Version file not changed, skipping')
+            return
+
         utils.create_dir_if_not_exists(os.path.dirname(
             self.dst_new_version_file))
 
