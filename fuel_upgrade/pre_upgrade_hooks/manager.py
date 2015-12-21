@@ -37,6 +37,8 @@ from fuel_upgrade.pre_upgrade_hooks.from_6_0_to_any_add_monitord_credentials \
     import AddMonitordKeystoneCredentialsHook
 from fuel_upgrade.pre_upgrade_hooks.from_6_0_to_any_copy_keys \
     import MoveKeysHook
+from fuel_upgrade.pre_upgrade_hooks.from_7_0_to_8_0_disable_api \
+    import DisableNailgunAPI
 from fuel_upgrade.pre_upgrade_hooks.from_any_to_6_1_dhcrelay_conf \
     import FixDhcrelayConf
 from fuel_upgrade.pre_upgrade_hooks.from_any_to_6_1_dhcrelay_monitor \
@@ -72,6 +74,7 @@ class PreUpgradeHookManager(object):
         FixDhcrelayConf,
         FixDhcrelayMonitor,
         SetFixedVersionInSupervisor,
+        DisableNailgunAPI,
     ]
 
     def __init__(self, upgraders, config):
