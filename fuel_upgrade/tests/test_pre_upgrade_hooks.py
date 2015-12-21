@@ -48,6 +48,8 @@ from fuel_upgrade.pre_upgrade_hooks.from_6_0_to_any_add_monitord_credentials \
     import AddMonitordKeystoneCredentialsHook
 from fuel_upgrade.pre_upgrade_hooks.from_6_0_to_any_copy_keys \
     import MoveKeysHook
+from fuel_upgrade.pre_upgrade_hooks.from_7_0_to_8_0_disable_api \
+    import DisableNailgunAPI
 from fuel_upgrade.pre_upgrade_hooks.from_any_to_6_1_dhcrelay_conf \
     import FixDhcrelayConf
 from fuel_upgrade.pre_upgrade_hooks.from_any_to_6_1_dhcrelay_monitor \
@@ -936,3 +938,21 @@ class TestSetFixedVersionInSupervisor(TestPreUpgradeHooksBase):
             self.assertEqual(m_open.call_count, 0)
 
         m_exec.assert_called_once_with('supervisorctl update')
+
+
+class TestDisableNailgunAPI(TestPreUpgradeHooksBase):
+
+    HookClass = DisableNailgunAPI
+
+    @mock.patch('fuel_upgrade.pre_upgrade_hooks.from_7_0_to_8_0_disable_api'
+                '.PreUpgradeHookBase')
+    def test_check_if_required(self, mock_config):
+        testcases = {
+            '7.0': True,
+            '8.0': False,
+        }
+
+        for case in testcases:
+            hook = self.get_hook({'from_version': case})
+            res = hook.check_if_required()
+            self.assertEqual(res, testcases[case])
