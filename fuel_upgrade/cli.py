@@ -30,6 +30,7 @@ from fuel_upgrade.checker_manager import CheckerManager
 from fuel_upgrade.config import build_config
 from fuel_upgrade.upgrade import UpgradeManager
 
+from fuel_upgrade.engines.backup import BackupManager
 from fuel_upgrade.engines.docker_engine import DockerInitializer
 from fuel_upgrade.engines.docker_engine import DockerUpgrader
 from fuel_upgrade.engines.host_system import HostSystemUpgrader
@@ -44,6 +45,7 @@ logger = logging.getLogger(__name__)
 #: A dict with supported systems.
 #: The key is used for system option in CLI.
 SUPPORTED_SYSTEMS = {
+    'backup': BackupManager,
     'host-system': HostSystemUpgrader,
     'docker-init': DockerInitializer,
     'docker': DockerUpgrader,
@@ -56,6 +58,10 @@ SUPPORTED_SYSTEMS = {
 #: we gonna to show error that's impossible to do.
 UNCOMPATIBLE_SYSTEMS = (
     ('docker-init', 'docker'),
+    ('backup', 'host-system'),
+    ('backup', 'docker-init'),
+    ('backup', 'docker'),
+    ('backup', 'openstack')
 )
 
 
@@ -88,7 +94,7 @@ def parse_args(args):
         'systems', choices=SUPPORTED_SYSTEMS.keys(), nargs='+',
         help='systems to upgrade')
     parser.add_argument(
-        '--src', required=True, help='path to update file')
+        '--src', help='path to update file')
     parser.add_argument(
         '--no-checker', action='store_true',
         help='do not check before upgrade')
@@ -138,11 +144,7 @@ def is_engine_in_list(engines_list, engine_class):
     return False
 
 
-def run_upgrade(args):
-    """Run upgrade on master node
-
-    :param args: argparse object
-    """
+def set_admin_password(args):
     # Get admin password
     if not args.password:
         args.password = getpass.getpass('Admin Password: ')
@@ -150,6 +152,16 @@ def run_upgrade(args):
     # recheck pasword again
     if not args.password:
         raise errors.CommandError(messages.no_password_provided)
+
+
+def run_upgrade(args):
+    """Run upgrade on master node
+
+    :param args: argparse object
+    """
+
+    if 'backup' not in args.systems:
+        set_admin_password(args)
 
     # Initialize config
     config = build_config(args.src, args.password)
