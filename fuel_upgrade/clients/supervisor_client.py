@@ -143,6 +143,14 @@ class SupervisorClient(object):
         logger.debug('Start supervisor process %s', service_name)
         self.supervisor.startProcess(service_name)
 
+    def stop(self, service_name):
+        """Stop the process under supervisor
+
+        :param str service_name: name of supervised process
+        """
+        logger.debug('Stop supervisor process %s', service_name)
+        self.supervisor.stopProcess(service_name)
+
     def get_all_processes_safely(self):
         """Retrieves list of processes from supervisor
 
