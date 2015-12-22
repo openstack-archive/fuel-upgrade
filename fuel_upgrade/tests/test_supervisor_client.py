@@ -56,6 +56,12 @@ class TestSupervisorClient(BaseTestCase):
         self.supervisor.stop_all_services()
         self.supervisor.supervisor.stopAllProcesses.assert_called_once_with()
 
+    def test_stop(self, _):
+        test_service_name = "test_service_name"
+        self.supervisor.stop(test_service_name)
+        self.supervisor.supervisor.stopProcess.assert_called_once_with(
+            test_service_name)
+
     @mock.patch('fuel_upgrade.clients.supervisor_client.SupervisorClient.'
                 'get_all_processes_safely')
     def test_restart_and_wait(self, _, __):
