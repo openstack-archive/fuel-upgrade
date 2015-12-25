@@ -629,3 +629,36 @@ class DockerInitializer(DockerUpgrader):
 
     def rollback(self):
         logger.warn("DockerInitializer doesn't support rollback")
+
+
+class DockerRestore(UpgradeEngine):
+    """Docker rebuild with restored data
+
+    Used for data-driven upgrade of the Admin node
+    """
+
+    def upgrade(self):
+        self.fuel_containers('stop')
+        self.fuel_containers('start')
+
+    def backup(self):
+        pass
+
+    def rollback(self):
+        pass
+
+    def required_free_space(self):
+        return {}
+
+    def container_action(self, action, container):
+        try:
+            utils.safe_exec_cmd('dockerctl {} {}'
+                                .format(action, container))
+        except Exception as exc:
+            logger.error('Error stopping docker container %s: %s',
+                         container, exc.message)
+
+    def fuel_containers(self, action):
+        containers = utils.exec_cmd_iterator('dockerctl list')
+        for container in containers:
+            self.container_action(action, container.strip())
