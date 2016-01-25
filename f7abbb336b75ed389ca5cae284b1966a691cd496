@@ -1,0 +1,11 @@
+Code-Review+1: Yuriy Taraday <yorik.sar@gmail.com>
+Code-Review+1: Bulat Gaifullin <bgaifullin@mirantis.com>
+Code-Review+1: venkatamahesh <venkatamaheshkotha@gmail.com>
+Code-Review+2: Igor Kalnitsky <ikalnitsky@mirantis.com>
+Workflow+1: Igor Kalnitsky <ikalnitsky@mirantis.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 25 Jan 2016 12:56:36 +0000
+Reviewed-on: https://review.openstack.org/270365
+Project: openstack/fuel-upgrade
+Branch: refs/heads/master
