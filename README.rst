@@ -1,3 +1,8 @@
+DEPRACATED
+==========
+!!!Please use fuel-octane instead!!!
+
+
 Fuel Upgrade Script
 ===================
 
